@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Sidebar } from "./components/Layout/Sidebar";
 import { UserManagement } from "./components/Dashboard/UserManagement";
 import { PaymentHistory } from "./components/Dashboard/PaymentHistory";
@@ -9,6 +9,7 @@ import { Statistics } from "./components/Dashboard/Statistics";
 import { NotificationSystem } from "./components/Dashboard/NotificationSystem";
 import AddProduct from "./components/Dashboard/Addproducts";
 import LoginPage from "./pages/LoginPage";
+import { io } from "socket.io-client";
 
 function App() {
   const [activeSection, setActiveSection] = useState("users");
@@ -19,6 +20,30 @@ function App() {
     const token = localStorage.getItem("token");
     setIsAuthenticated(!!token);
   }, []);
+
+  // Shu yerdan qilamiz
+  const socketRef = useRef();
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    const socket = io("https://mlm-backend.pixl.uz/", {
+      auth: { token },
+    });
+
+    socketRef.current = socket;
+
+    socket.on("connect", () => {
+      console.log("🔌 Ulandi:", socket.id);
+    });
+
+    socket.on("newPayment", (data) => {
+      console.log(data);
+    });
+
+    return () => {
+      socket.disconnect(); // komponent unmount bo‘lganda socketni uzish
+    };
+  }, []);
+  // Shu yerdan qilamiz
 
   const renderContent = () => {
     switch (activeSection) {
