@@ -1,11 +1,16 @@
-import { Coins } from "lucide-react";
+import { Coins, RefreshCcw, Smile } from "lucide-react";
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 
 export const Statistics: React.FC = () => {
-  const [modalUser, setUserModal] = useState(false);
+  const [userModal, setUserModal] = useState(false);
   const [modalCoin, setCoinModal] = useState(false);
   const [user, setUser] = useState([]);
   const [coinTotal, setCoinTotal] = useState([]);
+  const [modalChange, setModalChange] = useState(false);
+  const [oldUser, setOldUser] = useState(null);
+  const [coinValue, setCoinValue] = useState(0);
+  const [loading, setLoading] = useState(false);
 
   const hundleUser = async (e) => {
     e.preventDefault();
@@ -19,6 +24,7 @@ export const Statistics: React.FC = () => {
     const token = localStorage.getItem("token");
 
     try {
+      setLoading(true);
       const req = await fetch("https://mlm-backend.pixl.uz/statistika/user", {
         method: "POST",
         headers: {
@@ -29,16 +35,18 @@ export const Statistics: React.FC = () => {
       });
 
       if (req.ok) {
-        const result = await req.json();
-        console.log(result);
+        await req.json();
+        toast.success(`Muvaffaqiyatli qo'shildi ${(<Smile />)}`);
+        await getUser();
       } else {
         const errorText = await req.text();
         throw new Error(`Xatolik: ${req.status} - ${errorText}`);
       }
     } catch (error) {
-      console.error("So'rovda xatolik:", error.message);
+      toast.error("So'rovda xatolik:", error.message);
     } finally {
       setUserModal(false);
+      setLoading(false);
     }
   };
 
@@ -54,6 +62,7 @@ export const Statistics: React.FC = () => {
     const token = localStorage.getItem("token");
 
     try {
+      setLoading(true);
       const req = await fetch(
         "https://mlm-backend.pixl.uz/statistika/statis-web",
         {
@@ -67,16 +76,18 @@ export const Statistics: React.FC = () => {
       );
 
       if (req.ok) {
-        const result = await req.json();
-        console.log("Muvaffaqiyatli:", result);
+        await req.json();
+        await total();
+        toast.success(`Muvaffaqiyatli qo'shildi ${(<Smile />)}`);
       } else {
         const errorText = await req.text();
         throw new Error(`Xatolik: ${req.status} - ${errorText}`);
       }
     } catch (error) {
-      console.error("So'rovda xatolik:", error.message);
+      toast.error("So'rovda xatolik:", error.message);
     } finally {
       setCoinModal(false);
+      setLoading(false);
     }
   };
 
@@ -98,6 +109,7 @@ export const Statistics: React.FC = () => {
 
   const total = async () => {
     try {
+      setLoading(true);
       const req = await fetch(
         "https://mlm-backend.pixl.uz/statistika/statis-web"
       );
@@ -109,7 +121,9 @@ export const Statistics: React.FC = () => {
         throw new Error(`Xatolik: ${req.status} - ${errorText}`);
       }
     } catch (error) {
-      console.error("So'rovda xatolik:", error.message);
+      toast.error("So'rovda xatolik:", error.message);
+    } finally {
+      setLoading(false); // 👈 Bu ham kerak
     }
   };
 
@@ -119,22 +133,91 @@ export const Statistics: React.FC = () => {
 
   const getUser = async () => {
     try {
+      setLoading(true);
       const req = await fetch("https://mlm-backend.pixl.uz/statistika/user");
       if (req.status === 200) {
-        const res = await req.json(); // <--- await kiritildi
+        const res = await req.json();
         setUser(res);
       } else {
         const errorText = await req.text();
         throw new Error(`Xatolik: ${req.status} - ${errorText}`);
       }
     } catch (error) {
-      console.error("So'rovda xatolik:", error.message);
+      toast.error("So'rovda xatolik:", error.message);
+    } finally {
+      setLoading(false); // 👈 Bu joy yetishmayapti
     }
   };
 
   useEffect(() => {
     getUser();
   }, []);
+
+  const deleteStatistic = async (id) => {
+    const token = localStorage.getItem("token");
+
+    try {
+      setLoading(true);
+      const response = await fetch(
+        `https://mlm-backend.pixl.uz/statistika/user/${id}`,
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        await response.json();
+        toast.error("O'chirishda xatolik yuz berdi.");
+      } else {
+        toast.success("Statistika muvaffaqiyatli o'chirildi.");
+        await getUser();
+      }
+    } catch (error) {
+      toast.error(error.message || "Tarmoqqa ulanishda xatolik yuz berdi.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const updateStatistic = async ({ id, email, coin }) => {
+    const token = localStorage.getItem("token");
+    try {
+      setLoading(true);
+      const response = await fetch(
+        "https://mlm-backend.pixl.uz/statistika/user",
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ id, email, coin }),
+        }
+      );
+      if (!response.ok) {
+        toast.error("Yangilashda xatolik yuz berdi.");
+      } else {
+        toast.success("Statistika muvaffaqiyatli yangilandi.");
+        await getUser();
+      }
+    } catch (error) {
+      toast.error("Tarmoqqa ulanishda xatolik yuz berdi.");
+    } finally {
+      setModalChange(false);
+      setLoading(false);
+    }
+  };
+
+  const openEditModal = (user, id) => {
+    const filterUser = user.filter((item) => item.id === id);
+    filterUser.map((data) => {
+      setOldUser(data);
+    });
+    setModalChange(true);
+  };
 
   return (
     <div className="p-6">
@@ -171,7 +254,7 @@ export const Statistics: React.FC = () => {
       <div className="w-full h-32 grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 gap-4">
         <div className="gap-3 hover:shadow-md duration-200 border rounded-[10px] h-full flex flex-col items-center py-4 text-3xl font-bold justify-center">
           <div className="flex items-center gap-3">
-            Total <Coins />
+            Total <Coins className="text-yellow-500" />
           </div>
           <span>{amounTotalCoin}</span>
         </div>
@@ -199,10 +282,16 @@ export const Statistics: React.FC = () => {
                 <td className="border px-4 py-2">{u.email}</td>
                 <td className="border px-4 py-2">{u.coin}</td>
                 <td className="border px-4 py-2 space-x-2">
-                  <button className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded">
+                  <button
+                    onClick={() => openEditModal(user, u.id)}
+                    className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded"
+                  >
                     Edit
                   </button>
-                  <button className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded">
+                  <button
+                    onClick={() => deleteStatistic(u.id)}
+                    className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded"
+                  >
                     Delete
                   </button>
                 </td>
@@ -219,8 +308,46 @@ export const Statistics: React.FC = () => {
         </table>
       </div>
 
-      {modalUser && (
-        <div className="w-[500px] h-auto container mx-auto bg-white rounded-xl flex p-5 justify-center">
+      {modalChange && (
+        <div className="w-[500px] h-auto flex-col gap-5 fixed top-[30%] right-[30%] container mx-auto bg-white rounded-xl flex p-5 justify-center">
+          <h2 className="text-3xl">Statistikani tahrirlash</h2>
+          <p>
+            Email: <span className="ml-2 font-bold">{oldUser.email}</span>
+          </p>
+
+          <label>Coin miqdori:</label>
+          <input
+            className="border outline-none p-2 rounded-lg"
+            defaultValue={oldUser.coin}
+            placeholder={oldUser.coin}
+            type="number"
+            onChange={(e) => setCoinValue(e.target.value)}
+          />
+
+          <button
+            onClick={() => {
+              updateStatistic({
+                id: oldUser.id,
+                email: oldUser.email,
+                coin: Number(coinValue),
+              });
+            }}
+            className="px-5 py-2 cursor-pointer flex items-center justify-center text-white bg-green-600"
+          >
+            {loading ? <RefreshCcw className="animate-spin" /> : "Saqlash"}
+          </button>
+
+          <button
+            onClick={() => setModalChange(false)}
+            className="px-5 py-2 cursor-pointer text-white bg-red-700"
+          >
+            Bekor qilish
+          </button>
+        </div>
+      )}
+
+      {userModal && (
+        <div className="w-[500px] h-auto fixed top-[30%] right-[30%] container mx-auto bg-white rounded-xl flex p-5 justify-center">
           <form
             onSubmit={hundleUser}
             className="flex flex-col w-full items-center gap-5"
@@ -244,7 +371,9 @@ export const Statistics: React.FC = () => {
                 placeholder="Enter coin.."
               />
             </label>
-            <button className="mt-5 border px-10 py-2 rounded-lg">Add</button>
+            <button className="mt-5 border px-10 py-2 rounded-lg">
+              {loading ? <RefreshCcw className="animate-spin" /> : "Add"}
+            </button>
           </form>
         </div>
       )}
@@ -273,7 +402,9 @@ export const Statistics: React.FC = () => {
                 placeholder="Enter userCount.."
               />
             </label>
-            <button className="mt-5 border px-10 py-2 rounded-lg">Add</button>
+            <button className="mt-5 border px-10 py-2 rounded-lg">
+              {loading ? <RefreshCcw className="animate-spin" /> : "Add"}
+            </button>
           </form>
         </div>
       )}
