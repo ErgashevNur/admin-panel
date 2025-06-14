@@ -18,21 +18,16 @@ import {
   EyeOff,
   GlobeIcon,
 } from "lucide-react";
-// import { User } from "../types";
+import { User } from "../types";
 
 type UserDetailsProps = {
   userId: string;
 };
 
 const UserDetail: React.FC<UserDetailsProps> = ({ userId }) => {
-  const [user, setUser] = useState<null>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
-
-  // Go back handler
-  const handleBack = () => {
-    window.location.href = "/usermanagment";
-  };
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -172,26 +167,6 @@ const UserDetail: React.FC<UserDetailsProps> = ({ userId }) => {
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Back Button */}
-        <button
-          onClick={handleBack}
-          className="mb-4 inline-flex items-center px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg shadow-sm transition-colors"
-        >
-          <svg
-            className="w-4 h-4 mr-2"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth={2}
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M15 19l-7-7 7-7"
-            />
-          </svg>
-          Back
-        </button>
         {/* Header Section */}
         <div className="bg-white rounded-2xl p-6 sm:p-8 mb-6 border border-gray-100 shadow-sm">
           <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between space-y-4 sm:space-y-0">
