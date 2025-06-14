@@ -461,7 +461,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({
                 {t("activeUsers")}
               </p>
               <p className="text-2xl font-bold text-green-600">
-                {users.filter((u) => u.status === "Active").length}
+                {users.filter((u) => u.isActive).length}
               </p>
             </div>
           </div>
